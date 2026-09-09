@@ -2,7 +2,7 @@
 
 `setup-matt-pocock-skills` answers three questions about one repo: where issues live, what the triage labels are called, and where the domain docs sit. It records the answers as markdown files under `docs/agents/`.
 
-Those files are the only thing that varies between repos. The skills themselves are identical everywhere; they read `docs/agents/issue-tracker.md` at run time and do what it says. That is why the set is not tied to GitHub, and why no skill file ever needs editing to point it somewhere else. Invoking it with "link the skills to a custom issue tracker" works with anything you can connect to programmatically, with zero changes to the skills.
+Those files are the only thing that varies between repos. The skills themselves are identical everywhere; they read `docs/agents/issue-tracker.md` at run time and do what it says. That is why the set is not tied to GitHub, and why no skill file ever needs editing to point it somewhere else. GitHub, GitLab, Azure DevOps, and local markdown ship as first-class templates. Invoking setup with "link the skills to a custom issue tracker" also works with anything you can connect to programmatically.
 
 It is a prompt-driven skill, not a deterministic script. It reads your `git remote`, your existing `CLAUDE.md`, your existing `CONTEXT.md`, proposes what it found, and waits for you to confirm before writing anything.
 
@@ -41,18 +41,25 @@ The tracker options:
 | --- | --- | --- |
 | **GitHub** | the repo's GitHub Issues | the `gh` CLI |
 | **GitLab** | the repo's GitLab Issues | the `glab` CLI |
+| **Azure DevOps** | Azure Boards `Feature` parents with child `Task` tickets, plus Azure Repos PRs | Azure CLI with the `azure-devops` extension, plus an organization URL and project |
 | **Local markdown** | files under `.scratch/<feature>/` in this repo | nothing: no remote at all |
 | **Other** | wherever you say | one paragraph from you describing the workflow |
 
-The first three ship as templates in the skill and work out of the box. Local markdown is a first-class option, not a fallback: a solo project with no remote is fully supported. One caveat is worth repeating: don't use local markdown if you're using GitHub. They are alternatives, not layers.
+The first four ship as templates in the skill and work out of the box. Local markdown is a first-class option, not a fallback: a solo project with no remote is fully supported. One caveat is worth repeating: don't use local markdown if you're using a hosted tracker. They are alternatives, not layers.
 
-"Other" is not a stub either. It is the reason Jira, Linear, Azure DevOps and Beads all work: you describe the workflow, the skill records your prose in `docs/agents/issue-tracker.md`, and the downstream skills follow the prose. The community has already done this: a Jira-over-[MCP](https://www.aihero.dev/ai-coding-dictionary/mcp) variant, a Gitea CLI shaped like `gh`, a hand-built local dashboard.
+For Azure DevOps, setup asks for the organization URL and project instead of relying only on git-remote detection. It defaults parent specs and maps to Azure Boards `Feature` work items and implementation and decision tickets to child `Task` work items. It verifies those types against the project first because the Basic process has `Issue` instead of `Feature`, and asks for an available replacement only when a default is missing. It maps triage roles to tags and records Azure Repos pull-request commands. Azure Boards process templates also disagree on whether a completed work item is named `Done`, `Closed`, or something custom, so the generated instructions resolve the state whose category is `Completed` instead of hard-coding a name.
+
+"Other" is not a stub either. It is the reason Jira, Linear and Beads work: you describe the workflow, the skill records your prose in `docs/agents/issue-tracker.md`, and the downstream skills follow the prose. The community has already done this: a Jira-over-[MCP](https://www.aihero.dev/ai-coding-dictionary/mcp) variant, a Gitea CLI shaped like `gh`, a hand-built local dashboard.
 
 ## Common questions
 
 **Do I have to use GitHub?**
 
-No. GitHub, GitLab and local markdown under `.scratch/` all ship as ready-made templates, and anything else works through the "other" path. This is the most-repeated question in the record, in roughly these words: *"hard locked to github"*, *"can I use GitLab / Jira"*, *"what about Azure DevOps"*. The answer every time is that the tracker is a setup answer, not a skill property.
+No. GitHub, GitLab, Azure DevOps, and local markdown under `.scratch/` all ship as ready-made templates, and anything else works through the "other" path. This is the most-repeated question in the record, in roughly these words: *"hard locked to github"*, *"can I use GitLab / Jira"*, *"what about Azure DevOps"*. The answer every time is that the tracker is a setup answer, not a skill property.
+
+**What does Azure DevOps setup ask me for?**
+
+The Azure DevOps organization URL and project name or ID. Those values are written into `docs/agents/issue-tracker.md` and passed explicitly to Azure CLI commands, so Boards can remain the issue tracker even when the local git remote is hosted somewhere else. Parent artifacts default to `Feature` and their tickets to child `Task` work items. Setup asks about type names only when the project does not expose those defaults or cannot be inspected. Azure Repos PR triage is available but disabled until you flip its request-surface flag.
 
 **Do I need to re-run it after updating the skills?**
 
@@ -86,6 +93,7 @@ One long-standing complaint says yes, in these words: *"having a skill to set up
 - `docs/agents/issue-tracker.md` and `docs/agents/domain.md` exist, plus `triage-labels.md` if `triage` is installed.
 - An `## Agent skills` section appears in the instruction file your harness actually reads, with a one-line summary pointing at each of those files.
 - The tracker it proposed matches the remote you really use, and the label strings match labels that really exist in your tracker.
+- For Azure DevOps, the generated tracker file contains the intended organization and project, creates `Feature` parents with child `Task` tickets, and preserves unrelated tags when applying triage roles.
 - Afterwards, `/to-tickets` publishes without asking you where issues live, and `/triage` applies labels rather than inventing them.
 - Nothing in the skill files themselves changed. If setup edited a `SKILL.md`, something went wrong.
 
