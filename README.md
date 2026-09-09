@@ -79,6 +79,21 @@ In your agent, run it once per repo. It will:
 - Ask you what labels you apply to tickets when you triage them (`/triage` uses labels)
 - Ask you where you want to save any docs we create
 
+#### Using Azure DevOps
+
+Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and its Azure DevOps extension, then authenticate:
+
+```bash
+az extension add --name azure-devops
+az login
+```
+
+Run `/setup-matt-pocock-skills`, choose **Azure DevOps**, and provide your organization URL (for example, `https://dev.azure.com/contoso`) and project name or ID.
+
+The default Azure Boards layout is one `Feature` for the spec or parent effort, with implementation and decision tickets created as child `Task` work items. Setup checks that those types exist in your project's process and asks for alternatives when they do not. This matters for the Basic process, which uses `Issue` instead of `Feature`.
+
+The generated `docs/agents/issue-tracker.md` records the Azure Boards and Azure Repos commands the other skills use. Azure Repos pull requests can participate in `/triage`, but that request surface stays off until you enable it in the generated file.
+
 ### 3. Bam - you're ready to go.
 
 ## Why These Skills Exist
